@@ -54,6 +54,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     const res = await api.post('/api/v1/auth/login', { email, password });
     if (res.data?.data) {
+      if (res.data.data.token && typeof window !== 'undefined') {
+        localStorage.setItem('auth_token', res.data.data.token);
+      }
       setUser(res.data.data.user);
       setAgentProfile(res.data.data.agentProfile || null);
     }
@@ -63,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const registerUser = async (data: { name: string; email: string; password: string; phone?: string }) => {
     const res = await api.post('/api/v1/auth/register', data);
     if (res.data?.data) {
+      if (res.data.data.token && typeof window !== 'undefined') {
+        localStorage.setItem('auth_token', res.data.data.token);
+      }
       setUser(res.data.data.user);
     }
     return res.data.data;
@@ -81,6 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     const res = await api.post('/api/v1/auth/register-agent', data);
     if (res.data?.data) {
+      if (res.data.data.token && typeof window !== 'undefined') {
+        localStorage.setItem('auth_token', res.data.data.token);
+      }
       setUser(res.data.data.user);
       setAgentProfile(res.data.data.agentProfile || null);
     }
@@ -91,6 +100,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.post('/api/v1/auth/logout');
     } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_token');
+      }
       setUser(null);
       setAgentProfile(null);
     }
