@@ -66,6 +66,17 @@ export interface Property {
   securityDeposit?: number;
   location: PropertyLocation;
   details: Record<string, unknown>;
+  features?: {
+    bedrooms?: number;
+    bathrooms?: number;
+    balconies?: number;
+    superBuiltUpArea?: number;
+    carpetArea?: number;
+    plotArea?: number;
+    areaUnit?: string;
+    furnishing?: string;
+    possessionStatus?: string;
+  };
   amenities: string[];
   images: PropertyImage[];
   videoUrl?: string;
