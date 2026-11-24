@@ -303,11 +303,11 @@ export function LocationPickerMap({
           'OpenStreetMap': osm,
         },
         undefined,
-        { position: 'topright' }
+        { position: 'bottomright' }
       ).addTo(map);
 
       // Add zoom control to top-right
-      L.control.zoom({ position: 'topright' }).addTo(map);
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       // Add center draggable pin
       const marker = L.marker([currentLat, currentLng], {
@@ -478,9 +478,8 @@ export function LocationPickerMap({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm dark:border-slate-700/60 dark:bg-slate-900 ${className} ${
-        mode === 'boundary' && !readOnly ? '[&_.leaflet-container]:!cursor-crosshair' : ''
-      }`}
+      className={`relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm dark:border-slate-700/60 dark:bg-slate-900 ${className} ${mode === 'boundary' && !readOnly ? '[&_.leaflet-container]:!cursor-crosshair' : ''
+        }`}
     >
       {/* Map DOM Container - static class so React never wipes Leaflet internal classes */}
       <div ref={mapContainerRef} className="h-full w-full" style={{ minHeight: '100%' }} />
@@ -567,11 +566,10 @@ export function LocationPickerMap({
             <button
               type="button"
               onClick={() => setMode('pin')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                mode === 'pin'
-                  ? 'bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-zinc-950'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-              }`}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${mode === 'pin'
+                ? 'bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-zinc-950'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                }`}
             >
               <MapPin className="h-3 w-3" />
               <span>Point Pin</span>
@@ -579,11 +577,10 @@ export function LocationPickerMap({
             <button
               type="button"
               onClick={() => setMode('boundary')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                mode === 'boundary'
-                  ? 'bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-zinc-950'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-              }`}
+              className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${mode === 'boundary'
+                ? 'bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-zinc-950'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                }`}
             >
               <Square className="h-3 w-3" />
               <span>Plot Boundary</span>

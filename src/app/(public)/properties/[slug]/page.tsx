@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { MapPin, Bed, Bath, Maximize, ShieldCheck, Check, Building } from 'lucide-react';
+import { MapPin, Bed, Bath, Maximize, ShieldCheck, Check, Building, Lock } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { Property, AgentProfile } from '@/types';
 import { InquiryForm } from '@/components/inquiry/InquiryForm';
@@ -8,11 +8,21 @@ import { PropertyDetailMap } from '@/components/map/PropertyDetailMap';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ shareToken?: string }>;
 }
 
-async function getPropertyData(slug: string): Promise<{ property: Property; agentProfile?: AgentProfile; related: Property[] } | null> {
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+
+async function getPropertyData(
+  slug: string,
+  shareToken?: string
+): Promise<{ property: Property; agentProfile?: AgentProfile; related: Property[]; isPrivateView?: boolean } | null> {
   try {
-    const res = await fetch(`http://127.0.0.1:5000/api/v1/properties/${slug}`, {
+    const url = new URL(`${API_BASE_URL}/api/v1/properties/${slug}`);
+    if (shareToken) {
+      url.searchParams.set('shareToken', shareToken);
+    }
+    const res = await fetch(url.toString(), {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
@@ -23,17 +33,21 @@ async function getPropertyData(slug: string): Promise<{ property: Property; agen
   }
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const data = await getPropertyData(slug);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const data = await getPropertyData(slug, resolvedSearchParams?.shareToken);
   if (!data?.property) {
     return { title: 'Property Not Found' };
   }
 
   const { property } = data;
+  const isPrivate = property.visibility === 'private' || data.isPrivateView;
+
   return {
     title: `${property.title} | RV Group Ltd`,
     description: property.description.slice(0, 160),
+    robots: isPrivate ? { index: false, follow: false } : undefined,
     openGraph: {
       title: property.title,
       description: property.description.slice(0, 160),
@@ -42,21 +56,37 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function PropertyDetailPage({ params }: PageProps) {
+export default async function PropertyDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const data = await getPropertyData(slug);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const data = await getPropertyData(slug, resolvedSearchParams?.shareToken);
 
   if (!data?.property) {
     notFound();
   }
 
-  const { property, agentProfile } = data;
+  const { property, agentProfile, isPrivateView } = data;
   const agent = typeof property.agentId === 'object' && property.agentId !== null 
     ? (property.agentId as { name?: string; email?: string; phone?: string }) 
     : null;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Private Listing Exclusive Banner */}
+      {(isPrivateView || property.visibility === 'private') && (
+        <div className="mb-6 flex items-center gap-3 rounded-2xl border border-indigo-200/80 bg-indigo-50/80 p-4 text-indigo-900 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-200">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
+            <Lock className="h-5 w-5" />
+          </div>
+          <div className="text-sm">
+            <div className="font-bold">Exclusive Private & Off-Market Listing</div>
+            <div className="text-xs text-indigo-700/90 dark:text-indigo-300/80">
+              You are viewing this confidential property via an authorized private access link. This listing is not published in public search engines or the public catalog.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Title & Top Badges */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

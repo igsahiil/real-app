@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { LocationPickerMap } from '@/components/map/LocationPickerMap';
 import { type PlaceSearchResult, type PolygonAreaResult } from '@/lib/geo';
-import { Building, MapPin, ListChecks, Image as ImageIcon, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Building, MapPin, ListChecks, Image as ImageIcon, CheckCircle, ArrowRight, ArrowLeft, Globe, Lock } from 'lucide-react';
 
 export default function NewPropertyPage() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function NewPropertyPage() {
     description: '',
     listingType: 'sale' as 'sale' | 'rent' | 'lease',
     category: 'residential' as 'residential' | 'commercial' | 'plot_land',
+    visibility: 'public' as 'public' | 'private',
     propertyType: 'Apartment',
     price: 9500000,
     priceNegotiable: true,
@@ -198,6 +199,59 @@ export default function NewPropertyPage() {
                 placeholder="e.g. Spacious 3 BHK Designer Apartment in Satellite"
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Listing Visibility Scope</label>
+              <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, visibility: 'public' })}
+                  className={`flex items-start gap-3 rounded-2xl border p-3.5 text-left transition ${
+                    formData.visibility === 'public'
+                      ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/40'
+                      : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  <div
+                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                      formData.visibility === 'public' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
+                    }`}
+                  >
+                    <Globe className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">Public Listing</div>
+                    <div className="mt-0.5 text-[11px] text-slate-500">
+                      Published to live interactive map, public catalog, and searchable by all visitors.
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, visibility: 'private' })}
+                  className={`flex items-start gap-3 rounded-2xl border p-3.5 text-left transition ${
+                    formData.visibility === 'private'
+                      ? 'border-purple-600 bg-purple-50/50 ring-1 ring-purple-600 dark:border-purple-500 dark:bg-purple-950/40'
+                      : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/60'
+                  }`}
+                >
+                  <div
+                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                      formData.visibility === 'private' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'
+                    }`}
+                  >
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-white">Private (Off-Market)</div>
+                    <div className="mt-0.5 text-[11px] text-slate-500">
+                      Hidden from public maps & search. Accessible only to clients with your secure token link.
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

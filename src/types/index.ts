@@ -25,6 +25,7 @@ export interface AgentProfile {
 
 export type PropertyListingType = 'sale' | 'rent' | 'lease';
 export type PropertyCategory = 'residential' | 'commercial' | 'plot_land';
+export type PropertyVisibility = 'public' | 'private';
 export type PropertyStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'sold' | 'rented' | 'expired' | 'paused';
 
 export interface PropertyLocation {
@@ -82,6 +83,10 @@ export interface Property {
   videoUrl?: string;
   floorPlanUrl?: string;
   status: PropertyStatus;
+  visibility?: PropertyVisibility;
+  shareToken?: string;
+  shareTokenExpiresAt?: string;
+  isShareTokenActive?: boolean;
   rejectionReason?: string;
   isFeatured: boolean;
   views: number;
