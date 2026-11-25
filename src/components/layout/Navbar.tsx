@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Building2,
   PlusCircle,
@@ -21,10 +22,11 @@ import { useAuth } from '@/lib/auth-context';
 export function Navbar() {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95">
+      <header className="fixed top-0 left-0 right-0 z-[1000] w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/85">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Brand */}
           <Link href="/" className="flex items-center">
@@ -358,6 +360,7 @@ export function Navbar() {
           </div>
         </div>
       </div>
+      {pathname !== '/' && <div className="h-16 shrink-0" aria-hidden="true" />}
     </>
   );
 }

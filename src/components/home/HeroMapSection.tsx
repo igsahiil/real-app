@@ -127,6 +127,7 @@ export function HeroMapSection() {
             className="h-full w-full"
             selectedProperty={selectedProperty}
             onSelectProperty={setSelectedProperty}
+            controlsTopOffsetClass="top-4 lg:top-20"
           />
 
           {/* Desktop Left-to-Right Smooth Dark Royal Navy Mask (Pointer-events-none so map stays interactive) */}
@@ -148,7 +149,7 @@ export function HeroMapSection() {
 
         {/* Foreground Content Overlay (Desktop) / Top Hero Content (Mobile) */}
         <div className="order-1 relative z-[900] lg:pointer-events-none lg:flex-1 lg:flex lg:flex-col lg:justify-center">
-          <div className="container mx-auto max-w-7xl px-4 pt-8 pb-6 sm:px-6 lg:px-8 lg:pt-12 lg:pb-8">
+          <div className="container mx-auto max-w-7xl px-4 pt-24 pb-6 sm:px-6 lg:px-8 lg:pt-24 lg:pb-6">
             {/* Left Hero Copy & 4 Feature Cards */}
             <div className="lg:pointer-events-auto max-w-xl">
               {/* Brand Pill */}

@@ -24,13 +24,15 @@ interface CatalogMapViewProps {
   className?: string;
   selectedProperty?: Property | null;
   onSelectProperty?: (property: Property | null) => void;
+  controlsTopOffsetClass?: string;
 }
 
 export function CatalogMapView({
   properties,
-  className = 'h-full w-full',
+  className = 'h-[100dvh] w-full',
   selectedProperty,
   onSelectProperty,
+  controlsTopOffsetClass = 'top-4',
 }: CatalogMapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<LeafletMap | null>(null);
@@ -84,9 +86,9 @@ export function CatalogMapView({
     if (!mapContainerRef.current) return;
     const elem = mapContainerRef.current.parentElement || mapContainerRef.current;
     if (!document.fullscreenElement) {
-      elem.requestFullscreen().catch(() => {});
+      elem.requestFullscreen().catch(() => { });
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
   };
 
@@ -282,30 +284,28 @@ export function CatalogMapView({
       <div
         ref={mapContainerRef}
         className="h-full w-full"
-        style={{ minHeight: '520px', height: '100%', width: '100%' }}
+        style={{ minHeight: '360px', height: '100%', width: '100%' }}
       />
 
       {/* Top Right: Layer Switcher Pill [Map] [Satellite] matching reference image */}
-      <div className="absolute top-4 right-4 z-[999] flex items-center rounded-2xl border border-white/20 bg-slate-900/85 p-1 shadow-xl backdrop-blur-md">
+      <div className={`absolute ${controlsTopOffsetClass} right-4 z-[999] flex items-center rounded-2xl border border-white/20 bg-slate-900/85 p-1 shadow-xl backdrop-blur-md`}>
         <button
           type="button"
           onClick={() => switchMapLayer('roadmap')}
-          className={`min-h-[34px] rounded-xl px-3.5 py-1 text-xs font-bold transition ${
-            activeLayer === 'roadmap'
+          className={`min-h-[34px] rounded-xl px-3.5 py-1 text-xs font-bold transition ${activeLayer === 'roadmap'
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'text-slate-300 hover:text-white'
-          }`}
+            }`}
         >
           Map
         </button>
         <button
           type="button"
           onClick={() => switchMapLayer('satellite')}
-          className={`min-h-[34px] rounded-xl px-3.5 py-1 text-xs font-bold transition ${
-            activeLayer === 'satellite'
+          className={`min-h-[34px] rounded-xl px-3.5 py-1 text-xs font-bold transition ${activeLayer === 'satellite'
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'text-slate-300 hover:text-white'
-          }`}
+            }`}
         >
           Satellite
         </button>
