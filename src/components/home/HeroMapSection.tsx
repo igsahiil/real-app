@@ -113,15 +113,15 @@ export function HeroMapSection() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-[#080E23]">
+    <section className="relative w-full min-h-[100dvh] flex flex-col overflow-hidden bg-[#080E23]">
       {/* Subtle Ambient Indigo/Violet Glow on Left & Bottom */}
       <div className="pointer-events-none absolute -left-32 top-10 h-96 w-96 rounded-full bg-indigo-600/25 blur-[120px] z-10" />
       <div className="pointer-events-none absolute -bottom-24 left-1/4 h-72 w-96 rounded-full bg-violet-600/20 blur-[120px] z-10" />
 
       {/* Main Responsive Layout Wrapper */}
-      <div className="relative flex flex-col lg:block lg:min-h-[670px]">
+      <div className="relative flex flex-1 flex-col lg:justify-between min-h-[100dvh]">
         {/* Interactive Map Layer: Full-bleed background on Desktop; dedicated visible section on Mobile */}
-        <div className="order-2 relative h-[390px] sm:h-[440px] w-full lg:order-none lg:absolute lg:inset-0 lg:h-full">
+        <div className="order-2 relative flex-1 min-h-[380px] sm:min-h-[440px] w-full lg:order-none lg:absolute lg:inset-0 lg:h-full lg:min-h-0">
           <CatalogMapView
             properties={properties}
             className="h-full w-full"
@@ -147,7 +147,7 @@ export function HeroMapSection() {
         </div>
 
         {/* Foreground Content Overlay (Desktop) / Top Hero Content (Mobile) */}
-        <div className="order-1 relative z-[900] lg:pointer-events-none lg:flex lg:min-h-[670px] lg:flex-col lg:justify-between">
+        <div className="order-1 relative z-[900] lg:pointer-events-none lg:flex-1 lg:flex lg:flex-col lg:justify-center">
           <div className="container mx-auto max-w-7xl px-4 pt-8 pb-6 sm:px-6 lg:px-8 lg:pt-12 lg:pb-8">
             {/* Left Hero Copy & 4 Feature Cards */}
             <div className="lg:pointer-events-auto max-w-xl">
