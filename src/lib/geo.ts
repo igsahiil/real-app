@@ -72,6 +72,7 @@ export async function reverseGeocode(
   city?: string;
   locality?: string;
   pincode?: string;
+  society?: string;
 }> {
   try {
     const res = await fetch(
@@ -92,18 +93,35 @@ export async function reverseGeocode(
     const locality =
       addr.suburb ||
       addr.neighbourhood ||
-      addr.residential ||
       addr.quarter ||
       addr.village ||
+      addr.county ||
+      '';
+    const society =
+      addr.building ||
+      addr.residential ||
+      addr.commercial ||
+      addr.amenity ||
       '';
     const pincode = addr.postcode || '';
-    const fullAddress = data.display_name || '';
+
+    const shortParts = [
+      addr.house_number,
+      addr.road || addr.street,
+      locality,
+      city,
+    ].filter(Boolean);
+    const fullAddress =
+      shortParts.length >= 2
+        ? shortParts.join(', ')
+        : data.display_name?.split(',').slice(0, 3).join(',').trim() || '';
 
     return {
       address: fullAddress,
       city,
       locality,
       pincode,
+      society,
     };
   } catch {
     return {};

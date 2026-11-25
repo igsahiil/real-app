@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { LocationPickerMap } from '@/components/map/LocationPickerMap';
-import { type PlaceSearchResult, type PolygonAreaResult } from '@/lib/geo';
+import { reverseGeocode, type PlaceSearchResult, type PolygonAreaResult } from '@/lib/geo';
 import { Building, MapPin, ListChecks, Image as ImageIcon, CheckCircle, ArrowRight, ArrowLeft, Globe, Lock } from 'lucide-react';
 
 export default function NewPropertyPage() {
@@ -14,6 +14,9 @@ export default function NewPropertyPage() {
   const [error, setError] = useState<string | null>(null);
   const [boundaryCoords, setBoundaryCoords] = useState<[number, number][]>([]);
   const [areaNotice, setAreaNotice] = useState<string | null>(null);
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+  const reverseGeoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const skipNextReverseGeoRef = useRef(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -109,7 +112,41 @@ export default function NewPropertyPage() {
     setTimeout(() => setAreaNotice(null), 4000);
   };
 
+  const syncLocationDetailsFromCoords = (lat: number, lng: number) => {
+    if (skipNextReverseGeoRef.current) {
+      skipNextReverseGeoRef.current = false;
+      return;
+    }
+
+    if (reverseGeoTimeoutRef.current) {
+      clearTimeout(reverseGeoTimeoutRef.current);
+    }
+
+    reverseGeoTimeoutRef.current = setTimeout(async () => {
+      setIsReverseGeocoding(true);
+      try {
+        const geo = await reverseGeocode(lat, lng);
+        if (geo.city || geo.locality || geo.pincode || geo.address) {
+          setFormData((prev) => ({
+            ...prev,
+            location: {
+              ...prev.location,
+              city: geo.city || prev.location.city,
+              locality: geo.locality || prev.location.locality,
+              society: geo.society !== undefined ? geo.society : prev.location.society,
+              pincode: geo.pincode || prev.location.pincode,
+              address: geo.address || prev.location.address,
+            },
+          }));
+        }
+      } finally {
+        setIsReverseGeocoding(false);
+      }
+    }, 450);
+  };
+
   const handlePlaceSelect = (place: PlaceSearchResult) => {
+    skipNextReverseGeoRef.current = true;
     setFormData((prev) => ({
       ...prev,
       location: {
@@ -117,6 +154,7 @@ export default function NewPropertyPage() {
         coordinates: [place.lng, place.lat],
         city: place.city || prev.location.city,
         locality: place.locality || prev.location.locality,
+        society: place.displayName.split(',')[0]?.trim() || '',
         pincode: place.pincode || prev.location.pincode,
         address: place.displayName.split(',').slice(0, 3).join(',').trim() || prev.location.address,
       },
@@ -358,13 +396,16 @@ export default function NewPropertyPage() {
                 onApplyArea={handleApplyArea}
                 initialMode={formData.category === 'plot_land' ? 'boundary' : 'pin'}
                 onChange={({ lat, lng }) => {
+                  const fixedLat = Number(lat.toFixed(6));
+                  const fixedLng = Number(lng.toFixed(6));
                   setFormData((prev) => ({
                     ...prev,
                     location: {
                       ...prev.location,
-                      coordinates: [Number(lng.toFixed(6)), Number(lat.toFixed(6))],
+                      coordinates: [fixedLng, fixedLat],
                     },
                   }));
+                  syncLocationDetailsFromCoords(fixedLat, fixedLng);
                 }}
                 className="h-80 w-full"
               />
@@ -378,46 +419,61 @@ export default function NewPropertyPage() {
             </div>
 
             {/* Coordinates Display */}
-            <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-200/80 bg-slate-50 p-3.5 dark:border-slate-700/60 dark:bg-[#0E1626]/60">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500">Latitude</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  value={formData.location.coordinates[1]}
-                  onChange={(e) => {
-                    const lat = parseFloat(e.target.value) || 0;
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: {
-                        ...prev.location,
-                        coordinates: [prev.location.coordinates[0], lat],
-                      },
-                    }));
-                  }}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-xs font-bold tabular-nums text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
-              </div>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-3.5 dark:border-slate-700/60 dark:bg-[#0E1626]/60">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500">Latitude</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={formData.location.coordinates[1]}
+                    onChange={(e) => {
+                      const lat = parseFloat(e.target.value) || 0;
+                      const lng = formData.location.coordinates[0];
+                      setFormData((prev) => ({
+                        ...prev,
+                        location: {
+                          ...prev.location,
+                          coordinates: [lng, lat],
+                        },
+                      }));
+                      if (lat !== 0 && lng !== 0) {
+                        syncLocationDetailsFromCoords(lat, lng);
+                      }
+                    }}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-xs font-bold tabular-nums text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500">Longitude</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  value={formData.location.coordinates[0]}
-                  onChange={(e) => {
-                    const lng = parseFloat(e.target.value) || 0;
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: {
-                        ...prev.location,
-                        coordinates: [lng, prev.location.coordinates[1]],
-                      },
-                    }));
-                  }}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-xs font-bold tabular-nums text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500">Longitude</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={formData.location.coordinates[0]}
+                    onChange={(e) => {
+                      const lng = parseFloat(e.target.value) || 0;
+                      const lat = formData.location.coordinates[1];
+                      setFormData((prev) => ({
+                        ...prev,
+                        location: {
+                          ...prev.location,
+                          coordinates: [lng, lat],
+                        },
+                      }));
+                      if (lat !== 0 && lng !== 0) {
+                        syncLocationDetailsFromCoords(lat, lng);
+                      }
+                    }}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-xs font-bold tabular-nums text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                </div>
               </div>
+              {isReverseGeocoding && (
+                <p className="mt-2 text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                  Updating city, locality, pincode &amp; address from selected coordinates...
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
