@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { LocationPickerMap } from '@/components/map/LocationPickerMap';
 import { reverseGeocode, type PlaceSearchResult, type PolygonAreaResult } from '@/lib/geo';
-import { Building, MapPin, ListChecks, Image as ImageIcon, CheckCircle, ArrowRight, ArrowLeft, Globe, Lock } from 'lucide-react';
+import { Building, MapPin, ListChecks, Image as ImageIcon, CheckCircle, ArrowRight, ArrowLeft, Globe, Lock, UploadCloud, Video, FileText, Trash2, Star, Plus, Loader2 } from 'lucide-react';
 
 export default function NewPropertyPage() {
   const router = useRouter();
@@ -15,6 +15,8 @@ export default function NewPropertyPage() {
   const [boundaryCoords, setBoundaryCoords] = useState<[number, number][]>([]);
   const [areaNotice, setAreaNotice] = useState<string | null>(null);
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState<'photos' | 'video' | 'pdf' | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const reverseGeoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const skipNextReverseGeoRef = useRef(false);
 
@@ -51,6 +53,9 @@ export default function NewPropertyPage() {
       { url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1000&auto=format&fit=crop&q=80', isCover: false },
       { url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1000&auto=format&fit=crop&q=80', isCover: false },
     ],
+    videoUrl: '',
+    floorPlanUrl: '',
+    documents: [] as { name: string; url: string }[],
   });
 
   const availableAmenities = [
@@ -159,6 +164,67 @@ export default function NewPropertyPage() {
         address: place.displayName.split(',').slice(0, 3).join(',').trim() || prev.location.address,
       },
     }));
+  };
+
+  const handleMediaUpload = async (
+    fileList: FileList | null,
+    target: 'photos' | 'video' | 'pdf'
+  ) => {
+    if (!fileList || fileList.length === 0) return;
+    setUploadingMedia(target);
+    setUploadError(null);
+
+    try {
+      const payload = new FormData();
+      Array.from(fileList).forEach((file) => {
+        payload.append('files', file);
+      });
+
+      const res = await api.post('/api/v1/uploads', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const uploaded: Array<{ url: string; originalName: string; kind: 'image' | 'video' | 'pdf' }> =
+        res.data?.data?.files || [];
+
+      if (target === 'photos') {
+        const newImgs = uploaded.filter((f) => f.kind === 'image');
+        setFormData((prev) => {
+          const hasCover = prev.images.some((i) => i.isCover);
+          const mapped = newImgs.map((img, i) => ({
+            url: img.url,
+            isCover: !hasCover && i === 0,
+          }));
+          return {
+            ...prev,
+            images: [...prev.images, ...mapped],
+          };
+        });
+      } else if (target === 'video') {
+        const vid = uploaded.find((f) => f.kind === 'video');
+        if (vid) {
+          setFormData((prev) => ({ ...prev, videoUrl: vid.url }));
+        }
+      } else if (target === 'pdf') {
+        const pdfs = uploaded.filter((f) => f.kind === 'pdf');
+        setFormData((prev) => ({
+          ...prev,
+          floorPlanUrl: prev.floorPlanUrl || pdfs[0]?.url || '',
+          documents: [
+            ...prev.documents,
+            ...pdfs.map((p) => ({ name: p.originalName, url: p.url })),
+          ],
+        }));
+      }
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: string }).message)
+          : 'File upload failed';
+      setUploadError(msg);
+    } finally {
+      setUploadingMedia(null);
+    }
   };
 
   const handleSubmit = async () => {
@@ -672,33 +738,254 @@ export default function NewPropertyPage() {
         )}
 
         {step === 4 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Step 4: Photos & Visuals</h2>
-            <p className="text-xs text-slate-500">Provide direct image URLs for the property gallery.</p>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Step 4: Photos, Videos &amp; PDFs</h2>
+              <p className="text-xs text-slate-500">
+                Upload high-resolution photos, walkthrough videos, and PDF brochures/floor plans, or paste direct URLs.
+              </p>
+            </div>
 
-            <div className="space-y-3">
-              {formData.images.map((img, idx) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={img.url}
-                    onChange={(e) => {
-                      const newImages = [...formData.images];
-                      newImages[idx].url = e.target.value;
-                      setFormData({ ...formData, images: newImages });
-                    }}
-                    placeholder="https://images.unsplash.com/photo-..."
-                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  />
-                  <span
-                    className={`rounded-lg px-2.5 py-1 text-xs font-medium ${
-                      img.isCover ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {img.isCover ? 'Cover Photo' : `Photo ${idx + 1}`}
-                  </span>
+            {uploadError && (
+              <div className="rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+                {uploadError}
+              </div>
+            )}
+
+            {/* 1. Photos Section */}
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Property Photos</h3>
+                  <p className="text-[11px] text-slate-500">JPG, PNG, WEBP up to 50MB</p>
                 </div>
-              ))}
+                <div className="flex items-center gap-2">
+                  <label className="inline-flex min-h-[38px] cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+                    {uploadingMedia === 'photos' ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UploadCloud className="h-3.5 w-3.5" />
+                    )}
+                    <span>{uploadingMedia === 'photos' ? 'Uploading...' : 'Upload Photos'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      multiple
+                      className="hidden"
+                      disabled={uploadingMedia !== null}
+                      onChange={(e) => {
+                        handleMediaUpload(e.target.files, 'photos');
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        images: [...prev.images, { url: '', isCover: prev.images.length === 0 }],
+                      }))
+                    }
+                    className="inline-flex min-h-[38px] items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add URL
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2.5">
+                {formData.images.map((img, idx) => (
+                  <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-900">
+                    {img.url && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={img.url}
+                        alt={`Preview ${idx + 1}`}
+                        className="h-12 w-16 shrink-0 rounded-lg object-cover bg-slate-100"
+                      />
+                    )}
+                    <input
+                      type="text"
+                      value={img.url}
+                      onChange={(e) => {
+                        const newImages = [...formData.images];
+                        newImages[idx].url = e.target.value;
+                        setFormData({ ...formData, images: newImages });
+                      }}
+                      placeholder="https://..."
+                      className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = formData.images.map((item, i) => ({
+                            ...item,
+                            isCover: i === idx,
+                          }));
+                          setFormData({ ...formData, images: updated });
+                        }}
+                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                          img.isCover
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                        }`}
+                      >
+                        <Star className={`h-3 w-3 ${img.isCover ? 'fill-amber-500 text-amber-500' : ''}`} />
+                        {img.isCover ? 'Cover' : 'Set Cover'}
+                      </button>
+
+                      {formData.images.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const filtered = formData.images.filter((_, i) => i !== idx);
+                            if (img.isCover && filtered.length > 0) {
+                              filtered[0].isCover = true;
+                            }
+                            setFormData({ ...formData, images: filtered });
+                          }}
+                          className="rounded-lg p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                          title="Remove photo"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Property Video Section */}
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-950/60 dark:text-purple-400">
+                    <Video className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Property Walkthrough Video</h3>
+                    <p className="text-[11px] text-slate-500">Upload MP4, WEBM, MOV (up to 50MB) or paste a video link</p>
+                  </div>
+                </div>
+
+                <label className="inline-flex min-h-[38px] cursor-pointer items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-purple-700">
+                  {uploadingMedia === 'video' ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <UploadCloud className="h-3.5 w-3.5" />
+                  )}
+                  <span>{uploadingMedia === 'video' ? 'Uploading...' : 'Upload Video'}</span>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    className="hidden"
+                    disabled={uploadingMedia !== null}
+                    onChange={(e) => {
+                      handleMediaUpload(e.target.files, 'video');
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={formData.videoUrl}
+                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                  placeholder="Or paste YouTube / direct MP4 video URL..."
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+                {formData.videoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, videoUrl: '' })}
+                    className="rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-900"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {formData.videoUrl && !formData.videoUrl.includes('youtube') && !formData.videoUrl.includes('youtu.be') && (
+                <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-black dark:border-slate-700">
+                  <video src={formData.videoUrl} controls className="max-h-52 w-full" />
+                </div>
+              )}
+            </div>
+
+            {/* 3. PDFs (Brochures, Floor Plans & Legal Docs) */}
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">PDF Brochures &amp; Floor Plans</h3>
+                    <p className="text-[11px] text-slate-500">Attach PDF brochures, RERA certificates, or floor plan sheets</p>
+                  </div>
+                </div>
+
+                <label className="inline-flex min-h-[38px] cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+                  {uploadingMedia === 'pdf' ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <UploadCloud className="h-3.5 w-3.5" />
+                  )}
+                  <span>{uploadingMedia === 'pdf' ? 'Uploading...' : 'Upload PDFs'}</span>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    multiple
+                    className="hidden"
+                    disabled={uploadingMedia !== null}
+                    onChange={(e) => {
+                      handleMediaUpload(e.target.files, 'pdf');
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+
+              {formData.documents.length > 0 ? (
+                <div className="mt-3 space-y-2">
+                  {formData.documents.map((doc, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 font-semibold text-indigo-600 hover:underline dark:text-indigo-400 truncate"
+                      >
+                        <FileText className="h-4 w-4 shrink-0 text-rose-500" />
+                        <span className="truncate">{doc.name}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            documents: prev.documents.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="ml-2 rounded-lg p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                        title="Remove PDF"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-slate-400">No PDF documents attached yet.</p>
+              )}
             </div>
           </div>
         )}
@@ -723,6 +1010,11 @@ export default function NewPropertyPage() {
                 </p>
               )}
               <p><strong>Selected Amenities:</strong> {formData.amenities.join(', ')}</p>
+              <p>
+                <strong>Media Attached:</strong> {formData.images.filter((i) => i.url).length} Photos
+                {formData.videoUrl ? ' • 1 Video' : ''}
+                {formData.documents.length > 0 ? ` • ${formData.documents.length} PDF(s)` : ''}
+              </p>
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { MapPin, Bed, Bath, Maximize, ShieldCheck, Check, Building, Lock } from 'lucide-react';
+import { MapPin, Bed, Bath, Maximize, ShieldCheck, Check, Building, Lock, Video, FileText, ExternalLink } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { Property, AgentProfile } from '@/types';
 import { InquiryForm } from '@/components/inquiry/InquiryForm';
@@ -228,6 +228,61 @@ export default async function PropertyDetailPage({ params, searchParams }: PageP
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Walkthrough Video & PDF Brochures */}
+          {(property.videoUrl || (property.documents && property.documents.length > 0)) && (
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 space-y-5 dark:border-slate-800 dark:bg-slate-900">
+              {property.videoUrl && (
+                <div>
+                  <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                    <Video className="h-5 w-5 text-indigo-600" />
+                    Property Walkthrough Video
+                  </h2>
+                  {property.videoUrl.includes('youtube') || property.videoUrl.includes('youtu.be') ? (
+                    <a
+                      href={property.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:text-indigo-300"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Watch Video Tour
+                    </a>
+                  ) : (
+                    <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-black dark:border-slate-800">
+                      <video src={property.videoUrl} controls className="max-h-96 w-full" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {property.documents && property.documents.length > 0 && (
+                <div>
+                  <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                    <FileText className="h-5 w-5 text-emerald-600" />
+                    Brochures &amp; Floor Plans (PDF)
+                  </h2>
+                  <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {property.documents.map((doc, idx) => (
+                      <a
+                        key={idx}
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-800 transition hover:border-indigo-300 hover:bg-indigo-50/40 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200"
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <FileText className="h-4 w-4 shrink-0 text-rose-500" />
+                          <span className="truncate">{doc.name}</span>
+                        </span>
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

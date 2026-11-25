@@ -82,6 +82,7 @@ export interface Property {
   images: PropertyImage[];
   videoUrl?: string;
   floorPlanUrl?: string;
+  documents?: { name: string; url: string }[];
   status: PropertyStatus;
   visibility?: PropertyVisibility;
   shareToken?: string;
