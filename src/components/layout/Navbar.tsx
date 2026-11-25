@@ -26,7 +26,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[1000] w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/85">
+      <header className="fixed top-0 left-0 right-0 z-[1500] w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/85">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Brand */}
           <Link href="/" className="flex items-center">
@@ -180,7 +180,7 @@ export function Navbar() {
 
       {/* Mobile Sliding Navigation Drawer */}
       <div
-        className={`fixed inset-0 z-50 transition-opacity md:hidden ${
+        className={`fixed inset-0 z-[2000] transition-opacity md:hidden ${
           mobileMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
